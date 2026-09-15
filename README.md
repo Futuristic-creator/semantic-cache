@@ -17,10 +17,6 @@ it.
 
 ## What this is (and isn't)
 
-This sandbox has no internet access, so it cannot `pip install`
-GPTCache / redis-py / a vector DB, or download a pretrained embedding
-model. To keep this honest:
-
 - **Embeddings**: a shared TF-IDF vectorizer (scikit-learn), fit once
   on the full corpus and used identically by every backend. This
   isolates the thing actually being compared — caching *policy* — from
@@ -44,9 +40,8 @@ model. To keep this honest:
   duplicate, 3 paraphrases, and 2 **traps** — queries with high lexical
   overlap but different intent — plus 10 unrelated control queries.
   70 test queries total. This is small by design: built for a clear,
-  inspectable demo and ADR, not a statistically powered study. (The
-  original plan called for a QQP/STS-B subset; that requires internet
-  access this sandbox doesn't have.)
+  inspectable demo and ADR
+  
 - **Cost/latency model**: illustrative, configurable constants
   (`LLM_CALL_COST_USD = $0.0015`, `LLM_CALL_LATENCY_MS = 800`), not
   measured production invoices. Swap in your own numbers in
@@ -102,24 +97,6 @@ model. To keep this honest:
 | Long-running production system with real traffic feedback available | Adaptive per-entry threshold | Justifies the calibration investment; reduces manual tuning burden over time |
 | Anything customer-facing where a wrong cached answer is costly | Add a verification/judge layer on top of ANY of these | This benchmark shows similarity threshold alone — at any of the policies tested — is not sufficient by itself for high-stakes correctness |
 
-## Repository structure
-
-```
-dataset.py                  curated benchmark queries (canonical + trap/paraphrase/unrelated test set)
-embedder.py                 shared TF-IDF embedding layer used identically by every backend
-backends.py                 the four cache backend adapters (naive, GPTCache-style, Redis-style, adaptive)
-metrics.py                  framework-agnostic Prometheus-style metrics (counters + histograms)
-benchmark.py                orchestrator: threshold sweep, scoring, cost/latency model -> results.json
-build_dashboard.py          generates the self-contained dashboard.html report from results.json
-dashboard.html               the static report (charts, decision matrix, category breakdown)
-app.py                      Flask demo server -- TESTED, run this one first
-app_fastapi.py               FastAPI version (async, Pydantic validation, /docs, /health) -- see note below
-test_backends.py, test_metrics.py    unit tests (stdlib unittest, no extra dependencies)
-requirements.txt             numpy, scikit-learn, flask (for app.py)
-requirements-fastapi.txt     fastapi, uvicorn, pydantic (for app_fastapi.py)
-Dockerfile                    container build for app_fastapi.py
-.github/workflows/ci.yml      GitHub Actions: runs tests + regenerates the benchmark on every push
-```
 
 ### A note on `app.py` vs `app_fastapi.py`
 
