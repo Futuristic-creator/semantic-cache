@@ -1,1 +1,67 @@
-# semantic-cache
+# Semantic Caching Benchmark
+
+Compares semantic caching **policies** (not libraries) on cost, latency, and precision — specifically the failure mode most demos skip: serving the wrong cached answer.
+
+## Scope: what this is, and isn't
+
+- **Retrieval algorithm**: not the point, and not what's being tested. Production retrieval should use Elasticsearch/OpenSearch (HNSW) or pgvector — commodity, solved, actively optimized by people who do that full-time. This project uses TF-IDF + linear scan only because the build sandbox had no internet to install a real vector DB or embedding model.
+- **What's actually being tested**: the policy layer on top of retrieval — threshold calibration, eviction strategy, and verification tradeoffs. That layer is retrieval-engine-agnostic; swap the embedder, nothing else changes.
+- **Dataset**: 10 hand-curated topics, 70 test queries (exact/paraphrase/trap/unrelated), not a scraped benchmark. Built for a clear, inspectable demo, not statistical power.
+- **Cost model**: illustrative constants (`benchmark.py`), not measured invoices.
+
+## Backends
+
+| Backend | Policy |
+|---|---|
+| Naive | Linear scan, static threshold, no eviction |
+| GPTCache-style | LRU eviction, bounded cache |
+| Redis-style | TTL eviction |
+| Adaptive | Per-entry threshold, calibrated from labeled data |
+| EchoCache | 3-band: hit / Echo Check (verify) / miss — not binary |
+
+## Key findings
+
+1. **At a typical threshold, every non-tiered backend served a wrong answer on ~19-20 of 20 trap queries** (naive 20/20, GPTCache-style 19/20, Redis-style 19/20). Traps: high lexical overlap, different intent — e.g. "cancel my subscription" vs "cancel my subscription renewal reminder."
+2. **Eviction policy affects correctness, not just capacity.** Once cache writes-back on every miss (realistic), GPTCache-style's LRU eviction lets low-quality entries persist by recency, and precision drops below the naive baseline at moderate thresholds.
+3. **EchoCache improves aggregate precision (~0.50 vs ~0.40-0.49) and cost savings, but does not fix high-lexical-overlap traps.** A trap with genuinely high textual similarity lands in the "hit" band, same as naive — Echo Check only rescues *borderline*-similarity cases. At threshold 0.25 it still misses 20/20 traps. No threshold-based method fully eliminates false-hit risk; only ~10-16 of 70 queries per threshold actually trigger an Echo Check, so cost stays low while precision improves where it can.
+4. **Unbounded (naive) cache has the best raw F1 at low thresholds — and that's not a viable production choice regardless**, since it grows forever. Don't chase the benchmark number over the operational constraint.
+
+## Decision matrix
+
+| Situation | Recommendation |
+|---|---|
+| Prototyping, low volume | Naive baseline |
+| High volume, cost-sensitive, error-tolerant | GPTCache-style (LRU), monitor false-hit rate |
+| Compliance-sensitive (fintech, health) | EchoCache, never threshold alone |
+| Long-running system with feedback data | Adaptive per-entry threshold |
+| Any customer-facing high-stakes flow | Add verification on top of any policy — none of these are sufficient alone |
+
+## Repo structure
+
+```
+dataset.py, embedder.py, backends.py   core: dataset, shared TF-IDF embedder, 5 backend policies
+metrics.py                              Prometheus-style counters/histograms, framework-agnostic
+benchmark.py                            threshold sweep, scoring, cost model -> results.json
+build_dashboard.py, dashboard.html      report generator + static output, incl. cost calculator
+app.py                                  Flask demo API — tested
+app_fastapi.py                          FastAPI version — verify locally (see note)
+test_backends.py, test_metrics.py       22 unit tests, stdlib unittest
+Dockerfile, .github/workflows/ci.yml    container + CI — not build-tested in the offline sandbox
+requirements.txt, requirements-fastapi.txt
+```
+
+## Run it
+
+```bash
+pip install -r requirements.txt
+python3 benchmark.py
+python3 build_dashboard.py
+python3 -m unittest discover -p "test_*.py" -v
+python3 app.py
+```
+
+FastAPI version: `pip install -r requirements-fastapi.txt && uvicorn app_fastapi:app --reload` — written to spec, verify before relying on it in an interview.
+
+## Extending toward production
+
+Swap `embedder.py` for a real embedding model. Swap each backend's `store`/`query` internals for a real Elasticsearch/pgvector call behind the same interface — `benchmark.py` doesn't change. Replace the illustrative cost constants with real measured numbers.
