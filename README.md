@@ -1,4 +1,4 @@
-# Semantic Caching Benchmark
+# Semantic Cache Benchmark: The Correctness Gap Behind the Cost Savings(AI FinOps)
 
 Compares semantic caching **policies** on cost, latency, and precision — specifically the failure mode most demos skip: serving the wrong cached answer.
 
