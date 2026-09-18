@@ -24,15 +24,7 @@ Compares semantic caching **policies** on cost, latency, and precision — speci
 3. **EchoCache improves aggregate precision (~0.50 vs ~0.40-0.49) and cost savings, but does not fix high-lexical-overlap traps.** A trap with genuinely high textual similarity lands in the "hit" band, same as naive — Echo Check only rescues *borderline*-similarity cases. At threshold 0.25 it still misses 20/20 traps. No threshold-based method fully eliminates false-hit risk; only ~10-16 of 70 queries per threshold actually trigger an Echo Check, so cost stays low while precision improves where it can.
 4. **Unbounded (naive) cache has the best raw F1 at low thresholds — and that's not a viable production choice regardless**, since it grows forever. Don't chase the benchmark number over the operational constraint.
 
-## Decision matrix
-
-| Situation | Recommendation |
-|---|---|
-| Prototyping, low volume | Naive baseline |
-| High volume, cost-sensitive, error-tolerant | GPTCache-style (LRU), monitor false-hit rate |
-| Compliance-sensitive (fintech, health) | EchoCache, never threshold alone |
-| Long-running system with feedback data | Adaptive per-entry threshold |
-| Any customer-facing high-stakes flow | Add verification on top of any policy — none of these are sufficient alone |
+<img width="1047" height="501" alt="Screenshot 2026-09-18 at 12 10 56" src="https://github.com/user-attachments/assets/ea98285d-81bd-44bc-9ec8-fa9139f86ee5" />
 
 
 ```
