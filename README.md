@@ -1,13 +1,11 @@
 # Semantic Caching Benchmark
 
-Compares semantic caching **policies** (not libraries) on cost, latency, and precision — specifically the failure mode most demos skip: serving the wrong cached answer.
+Compares semantic caching **policies** on cost, latency, and precision — specifically the failure mode most demos skip: serving the wrong cached answer.
 
-## Scope: what this is, and isn't
+## Scope: 
 
 - **Retrieval algorithm**: not the point, and not what's being tested. Production retrieval should use Elasticsearch/OpenSearch (HNSW) or pgvector — commodity, solved, actively optimized by people who do that full-time. This project uses TF-IDF + linear scan only because the build sandbox had no internet to install a real vector DB or embedding model.
-- **What's actually being tested**: the policy layer on top of retrieval — threshold calibration, eviction strategy, and verification tradeoffs. That layer is retrieval-engine-agnostic; swap the embedder, nothing else changes.
-- **Dataset**: 10 hand-curated topics, 70 test queries (exact/paraphrase/trap/unrelated), not a scraped benchmark. Built for a clear, inspectable demo, not statistical power.
-- **Cost model**: illustrative constants (`benchmark.py`), not measured invoices.
+- **Scope**: the policy layer on top of retrieval — threshold calibration, eviction strategy, and verification tradeoffs. That layer is retrieval-engine-agnostic; swap the embedder, nothing else changes.
 
 ## Backends
 
@@ -36,18 +34,7 @@ Compares semantic caching **policies** (not libraries) on cost, latency, and pre
 | Long-running system with feedback data | Adaptive per-entry threshold |
 | Any customer-facing high-stakes flow | Add verification on top of any policy — none of these are sufficient alone |
 
-## Repo structure
 
-```
-dataset.py, embedder.py, backends.py   core: dataset, shared TF-IDF embedder, 5 backend policies
-metrics.py                              Prometheus-style counters/histograms, framework-agnostic
-benchmark.py                            threshold sweep, scoring, cost model -> results.json
-build_dashboard.py, dashboard.html      report generator + static output, incl. cost calculator
-app.py                                  Flask demo API — tested
-app_fastapi.py                          FastAPI version — verify locally (see note)
-test_backends.py, test_metrics.py       22 unit tests, stdlib unittest
-Dockerfile, .github/workflows/ci.yml    container + CI — not build-tested in the offline sandbox
-requirements.txt, requirements-fastapi.txt
 ```
 
 ## Run it
@@ -65,3 +52,25 @@ FastAPI version: `pip install -r requirements-fastapi.txt && uvicorn app_fastapi
 ## Extending toward production
 
 Swap `embedder.py` for a real embedding model. Swap each backend's `store`/`query` internals for a real Elasticsearch/pgvector call behind the same interface — `benchmark.py` doesn't change. Replace the illustrative cost constants with real measured numbers.
+
+
+Dashboards rendered by project , helps in decision making
+
+<img width="1357" height="702" alt="Screenshot 2026-09-18 at 12 06 04" src="https://github.com/user-attachments/assets/c7e4be33-3436-4271-912e-d2818de6f239" />
+
+
+<img width="1221" height="576" alt="Screenshot 2026-09-18 at 12 06 25" src="https://github.com/user-attachments/assets/0b105c23-563a-4b2e-861f-0439291990b2" />
+
+<img width="1159" height="557" alt="Screenshot 2026-09-18 at 12 06 41" src="https://github.com/user-attachments/assets/37a67905-2a2b-42da-8a72-5345a9c6ecda" />
+
+<img width="1290" height="733" alt="Screenshot 2026-09-18 at 12 07 14" src="https://github.com/user-attachments/assets/308dd683-c177-4cbb-a19c-13c5fe767d7b" />
+
+<img width="1216" height="660" alt="Screenshot 2026-09-18 at 12 07 36" src="https://github.com/user-attachments/assets/b1de8486-91e6-469c-84c1-18b84e7940d4" />
+
+<img width="1145" height="588" alt="Screenshot 2026-09-18 at 12 08 24" src="https://github.com/user-attachments/assets/58731942-e9df-4ed1-91e8-97c92d44ced8" />
+
+
+
+
+
+
