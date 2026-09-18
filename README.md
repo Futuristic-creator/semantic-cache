@@ -3,9 +3,9 @@
 Compares semantic caching **policies** on cost, latency, and precision — specifically the failure mode most demos skip: serving the wrong cached answer.
 
 ## Scope: 
+ The policy layer on top of retrieval — threshold calibration, eviction strategy, and verification tradeoffs. That layer is retrieval-engine-agnostic; swap the embedder, nothing else changes.
 
-- **Retrieval algorithm**: not the point, and not what's being tested. Production retrieval should use Elasticsearch/OpenSearch (HNSW) or pgvector — commodity, solved, actively optimized by people who do that full-time. This project uses TF-IDF + linear scan only because the build sandbox had no internet to install a real vector DB or embedding model.
-- **Scope**: the policy layer on top of retrieval — threshold calibration, eviction strategy, and verification tradeoffs. That layer is retrieval-engine-agnostic; swap the embedder, nothing else changes.
+  Pls note: Production retrieval should use Elasticsearch/OpenSearch (HNSW) or pgvector — commodity, solved, actively optimized by people who do that full-time.
 
 ## Backends
 
